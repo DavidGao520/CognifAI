@@ -19,10 +19,11 @@ import {
   Loader2,
   X,
   LogOut,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { database } from "@/lib/firebase";
-import { ref, get, push, set } from "firebase/database";
+import { ref, get, push, set, remove } from "firebase/database";
 
 const iconMap: Record<string, React.ElementType> = {
   atom: Atom,
@@ -509,6 +510,8 @@ export default function DashboardPage() {
   };
 
   const [seeding, setSeeding] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<NotebookDoc | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSeedSamples = async () => {
     setSeeding(true);
@@ -564,6 +567,19 @@ export default function DashboardPage() {
       console.error("Error seeding samples:", err);
     }
     setSeeding(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !user) return;
+    setDeleting(true);
+    try {
+      await remove(ref(database, `users/${user.uid}/notebooks/${deleteTarget.id}`));
+      setDeleteTarget(null);
+      fetchNotebooks();
+    } catch (err) {
+      console.error("Error deleting notebook:", err);
+    }
+    setDeleting(false);
   };
 
   const timeAgo = (date: Date | null) => {
@@ -691,30 +707,42 @@ export default function DashboardPage() {
               {filtered.map((notebook) => {
                 const Icon = iconMap[notebook.icon] || Atom;
                 return (
-                  <Link
-                    key={notebook.id}
-                    href={`/notebook/${notebook.id}`}
-                    className="bg-white rounded-[10px] border border-[#e5e7eb] p-5 hover:shadow-md hover:border-[#5b6ef5]/30 transition-all group"
-                  >
-                    <div
-                      className="w-11 h-11 rounded-[10px] flex items-center justify-center mb-4"
-                      style={{ backgroundColor: notebook.bgColor }}
+                  <div key={notebook.id} className="relative group">
+                    <Link
+                      href={`/notebook/${notebook.id}`}
+                      className="block bg-white rounded-[10px] border border-[#e5e7eb] p-5 hover:shadow-md hover:border-[#5b6ef5]/30 transition-all"
                     >
-                      <Icon
-                        className="w-5 h-5"
-                        style={{ color: notebook.color }}
-                      />
-                    </div>
-                    <h3 className="font-semibold text-[#101828] mb-1 group-hover:text-[#5b6ef5] transition-colors">
-                      {notebook.name}
-                    </h3>
-                    <p className="text-xs text-[#6a7282] mb-2">
-                      {notebook.sections} sections &bull; {notebook.pages} pages
-                    </p>
-                    <p className="text-xs text-[#99a1af]">
-                      Last edited {timeAgo(notebook.updatedAt)}
-                    </p>
-                  </Link>
+                      <div
+                        className="w-11 h-11 rounded-[10px] flex items-center justify-center mb-4"
+                        style={{ backgroundColor: notebook.bgColor }}
+                      >
+                        <Icon
+                          className="w-5 h-5"
+                          style={{ color: notebook.color }}
+                        />
+                      </div>
+                      <h3 className="font-semibold text-[#101828] mb-1 group-hover:text-[#5b6ef5] transition-colors">
+                        {notebook.name}
+                      </h3>
+                      <p className="text-xs text-[#6a7282] mb-2">
+                        {notebook.sections} sections &bull; {notebook.pages} pages
+                      </p>
+                      <p className="text-xs text-[#99a1af]">
+                        Last edited {timeAgo(notebook.updatedAt)}
+                      </p>
+                    </Link>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteTarget(notebook);
+                      }}
+                      className="absolute top-3 right-3 p-1.5 rounded-[8px] opacity-0 group-hover:opacity-100 hover:bg-red-50 text-[#99a1af] hover:text-red-500 transition-all"
+                      title="Delete notebook"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -758,6 +786,42 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-[10px] w-full max-w-sm p-6 shadow-xl mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <h2 className="text-lg font-bold text-[#101828]">Delete Notebook</h2>
+            </div>
+            <p className="text-sm text-[#6a7282] mb-6">
+              Are you sure you want to delete <strong>&ldquo;{deleteTarget.name}&rdquo;</strong>? This will permanently remove all sections and pages inside it. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 px-4 py-2.5 border border-[#e5e7eb] rounded-[10px] text-sm font-medium text-[#364153] hover:bg-[#f7f8fa] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-[10px] text-sm font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Notebook Modal */}
       {showModal && (
