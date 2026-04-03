@@ -11,8 +11,8 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { database } from "@/lib/firebase";
+import { ref, push, set } from "firebase/database";
 import { useAuth } from "@/context/AuthContext";
 
 type IgniteTab = "restructure" | "elaborate" | "verify" | "question";
@@ -57,7 +57,7 @@ function extractKeyTerms(text: string): string[] {
 function findFormulas(text: string): string[] {
   const formulaPatterns = [
     /[A-Z]\s*=\s*[^\n,]+/g,
-    /\b\w+\s*[=<>]+\s*\w+\s*[*/x×+-]\s*\w+/gi,
+    /\b\w+\s*[=<>]+\s*\w+\s*[*/x\u00d7+-]\s*\w+/gi,
   ];
   const results: string[] = [];
   for (const pat of formulaPatterns) {
@@ -265,16 +265,18 @@ export default function IgnitePanel({ content, pageId }: IgnitePanelProps) {
     setResult(output);
     setIsLoading(false);
 
-    // Save to Firestore
+    // Save to Realtime Database
     if (user) {
       try {
-        await addDoc(collection(db, "ai_generations"), {
-          userId: user.uid,
+        const genRef = push(
+          ref(database, `users/${user.uid}/ai_generations`)
+        );
+        await set(genRef, {
           pageId,
           type: activeTab,
           inputText: content.slice(0, 500),
           outputText: output,
-          createdAt: serverTimestamp(),
+          createdAt: new Date().toISOString(),
         });
       } catch {
         // silently handle

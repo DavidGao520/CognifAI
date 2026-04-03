@@ -15,8 +15,8 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { ref, set } from "firebase/database";
+import { auth, database } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
@@ -63,10 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password
     );
     await updateProfile(credential.user, { displayName });
-    await setDoc(doc(db, "users", credential.user.uid), {
+    await set(ref(database, "users/" + credential.user.uid), {
       displayName,
       email,
-      createdAt: serverTimestamp(),
+      createdAt: new Date().toISOString(),
     });
   };
 

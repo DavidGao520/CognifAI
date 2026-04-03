@@ -19,19 +19,8 @@ import {
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-  updateDoc,
-  increment,
-} from "firebase/firestore";
+import { database } from "@/lib/firebase";
+import { ref, get, push, set, update } from "firebase/database";
 
 interface SectionDoc {
   id: string;
@@ -63,38 +52,50 @@ export default function NotebookPage({
   const [creating, setCreating] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!user) return;
     setFetching(true);
     try {
-      const nbDoc = await getDoc(doc(db, "notebooks", id));
-      if (!nbDoc.exists()) {
+      // Fetch notebook
+      const nbSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}`)
+      );
+      if (!nbSnapshot.exists()) {
         router.push("/dashboard");
         return;
       }
-      const data = nbDoc.data();
-      setNotebook({ name: data.name, description: data.description || "" });
-
-      const sectQuery = query(
-        collection(db, "notebooks", id, "sections"),
-        orderBy("order", "asc")
-      );
-      const snap = await getDocs(sectQuery);
-      const items: SectionDoc[] = snap.docs.map((d) => {
-        const s = d.data();
-        return {
-          id: d.id,
-          name: s.name,
-          description: s.description || "",
-          pages: s.pageCount || 0,
-          order: s.order || 0,
-          updatedAt: s.updatedAt?.toDate?.() || null,
-        };
+      const nbData = nbSnapshot.val();
+      setNotebook({
+        name: nbData.name,
+        description: nbData.description || "",
       });
+
+      // Fetch sections
+      const sectionsSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}/sections`)
+      );
+      const items: SectionDoc[] = [];
+      if (sectionsSnapshot.exists()) {
+        const sectionsData = sectionsSnapshot.val();
+        for (const [key, value] of Object.entries(sectionsData)) {
+          const s = value as Record<string, unknown>;
+          items.push({
+            id: key,
+            name: (s.name as string) || "",
+            description: (s.description as string) || "",
+            pages: (s.pageCount as number) || 0,
+            order: (s.order as number) || 0,
+            updatedAt: s.updatedAt ? new Date(s.updatedAt as string) : null,
+          });
+        }
+        // Sort by order ascending
+        items.sort((a, b) => a.order - b.order);
+      }
       setSections(items);
     } catch {
       // handle error
     }
     setFetching(false);
-  }, [id, router]);
+  }, [id, router, user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -116,51 +117,50 @@ export default function NotebookPage({
   };
 
   const handleAddSection = async () => {
-    if (!newSectionName.trim()) return;
+    if (!newSectionName.trim() || !user) return;
     setCreating(true);
     try {
-      const sectionRef = await addDoc(
-        collection(db, "notebooks", id, "sections"),
-        {
-          name: newSectionName.trim(),
-          description: newSectionDesc.trim(),
-          order: sections.length,
-          pageCount: 0,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        }
+      const now = new Date().toISOString();
+
+      // Create section
+      const sectionRef = push(
+        ref(database, `users/${user.uid}/notebooks/${id}/sections`)
       );
+      const sectionId = sectionRef.key!;
+      await set(sectionRef, {
+        name: newSectionName.trim(),
+        description: newSectionDesc.trim(),
+        order: sections.length,
+        pageCount: 1,
+        createdAt: now,
+        updatedAt: now,
+      });
 
       // Update notebook section count
-      await updateDoc(doc(db, "notebooks", id), {
-        sectionCount: increment(1),
-        updatedAt: serverTimestamp(),
+      const nbSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}`)
+      );
+      const currentNb = nbSnapshot.val() || {};
+      await update(ref(database, `users/${user.uid}/notebooks/${id}`), {
+        sectionCount: (currentNb.sectionCount || 0) + 1,
+        updatedAt: now,
       });
 
       // Create a default first page in the section
-      await addDoc(
-        collection(
-          db,
-          "notebooks",
-          id,
-          "sections",
-          sectionRef.id,
-          "pages"
-        ),
-        {
-          title: "Untitled Page",
-          content: "",
-          wordCount: 0,
-          order: 0,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        }
+      const pageRef = push(
+        ref(
+          database,
+          `users/${user.uid}/notebooks/${id}/sections/${sectionId}/pages`
+        )
       );
-
-      await updateDoc(
-        doc(db, "notebooks", id, "sections", sectionRef.id),
-        { pageCount: increment(1) }
-      );
+      await set(pageRef, {
+        title: "Untitled Page",
+        content: "",
+        wordCount: 0,
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
 
       setShowModal(false);
       setNewSectionName("");

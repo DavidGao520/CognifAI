@@ -18,20 +18,8 @@ import Sidebar from "@/components/Sidebar";
 import NoteEditor from "@/components/NoteEditor";
 import IgnitePanel from "@/components/IgnitePanel";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-  updateDoc,
-  increment,
-  limit as firestoreLimit,
-} from "firebase/firestore";
+import { database } from "@/lib/firebase";
+import { ref, get, push, set, update } from "firebase/database";
 
 interface PageDoc {
   id: string;
@@ -61,38 +49,53 @@ export default function NoteEditorPage({
   const [saveStatus, setSaveStatus] = useState("Saved");
 
   const fetchData = useCallback(async () => {
+    if (!user) return;
     setFetching(true);
     try {
       // Fetch notebook name
-      const nbDoc = await getDoc(doc(db, "notebooks", id));
-      if (nbDoc.exists()) {
-        setNotebookName(nbDoc.data().name);
+      const nbSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}`)
+      );
+      if (nbSnapshot.exists()) {
+        setNotebookName(nbSnapshot.val().name);
       }
 
       // Fetch section name
-      const sectDoc = await getDoc(
-        doc(db, "notebooks", id, "sections", sectionId)
+      const sectSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}/sections/${sectionId}`)
       );
-      if (sectDoc.exists()) {
-        setSectionName(sectDoc.data().name);
+      if (sectSnapshot.exists()) {
+        setSectionName(sectSnapshot.val().name);
       }
 
       // Fetch all pages
-      const pagesQuery = query(
-        collection(db, "notebooks", id, "sections", sectionId, "pages"),
-        orderBy("order", "asc")
+      const pagesSnapshot = await get(
+        ref(
+          database,
+          `users/${user.uid}/notebooks/${id}/sections/${sectionId}/pages`
+        )
       );
-      const snap = await getDocs(pagesQuery);
-      const pageList: PageDoc[] = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          title: data.title || "Untitled",
-          content: data.content || "",
-          wordCount: data.wordCount || 0,
-          updatedAt: data.updatedAt?.toDate?.() || null,
-        };
-      });
+      const pageList: PageDoc[] = [];
+      if (pagesSnapshot.exists()) {
+        const pagesData = pagesSnapshot.val();
+        for (const [key, value] of Object.entries(pagesData)) {
+          const p = value as Record<string, unknown>;
+          pageList.push({
+            id: key,
+            title: (p.title as string) || "Untitled",
+            content: (p.content as string) || "",
+            wordCount: (p.wordCount as number) || 0,
+            updatedAt: p.updatedAt ? new Date(p.updatedAt as string) : null,
+          });
+        }
+        // Sort by order ascending
+        pageList.sort((a, b) => {
+          const pagesData2 = pagesSnapshot.val();
+          const orderA = (pagesData2[a.id]?.order as number) || 0;
+          const orderB = (pagesData2[b.id]?.order as number) || 0;
+          return orderA - orderB;
+        });
+      }
       setPages(pageList);
 
       // Determine active page
@@ -117,7 +120,7 @@ export default function NoteEditorPage({
       // handle error
     }
     setFetching(false);
-  }, [id, sectionId, pageId]);
+  }, [id, sectionId, pageId, user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -136,29 +139,50 @@ export default function NoteEditorPage({
   };
 
   const handleAddPage = async () => {
+    if (!user) return;
     try {
-      const pageRef = await addDoc(
-        collection(db, "notebooks", id, "sections", sectionId, "pages"),
+      const now = new Date().toISOString();
+      const pageRef = push(
+        ref(
+          database,
+          `users/${user.uid}/notebooks/${id}/sections/${sectionId}/pages`
+        )
+      );
+      await set(pageRef, {
+        title: "Untitled Page",
+        content: "",
+        wordCount: 0,
+        order: pages.length,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Update section page count
+      const sectSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}/sections/${sectionId}`)
+      );
+      const currentSect = sectSnapshot.val() || {};
+      await update(
+        ref(database, `users/${user.uid}/notebooks/${id}/sections/${sectionId}`),
         {
-          title: "Untitled Page",
-          content: "",
-          wordCount: 0,
-          order: pages.length,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          pageCount: (currentSect.pageCount || 0) + 1,
+          updatedAt: now,
         }
       );
-      await updateDoc(doc(db, "notebooks", id, "sections", sectionId), {
-        pageCount: increment(1),
-        updatedAt: serverTimestamp(),
+
+      // Update notebook page count
+      const nbSnapshot = await get(
+        ref(database, `users/${user.uid}/notebooks/${id}`)
+      );
+      const currentNb = nbSnapshot.val() || {};
+      await update(ref(database, `users/${user.uid}/notebooks/${id}`), {
+        pageCount: (currentNb.pageCount || 0) + 1,
+        updatedAt: now,
       });
-      await updateDoc(doc(db, "notebooks", id), {
-        pageCount: increment(1),
-        updatedAt: serverTimestamp(),
-      });
+
       // Refresh
       fetchData();
-      setActivePageId(pageRef.id);
+      setActivePageId(pageRef.key!);
     } catch {
       // handle error
     }

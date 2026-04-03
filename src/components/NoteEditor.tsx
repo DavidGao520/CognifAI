@@ -11,8 +11,9 @@ import {
   Code,
   Link2,
 } from "lucide-react";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { database } from "@/lib/firebase";
+import { ref, update } from "firebase/database";
+import { useAuth } from "@/context/AuthContext";
 
 interface NoteEditorProps {
   pageId: string;
@@ -37,6 +38,7 @@ export default function NoteEditor({
   const [content, setContent] = useState(initialContent);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef({ title: initialTitle, content: initialContent });
+  const { user } = useAuth();
 
   // Sync when props change (switching pages)
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function NoteEditor({
     lastSavedRef.current = { title: initialTitle, content: initialContent };
   }, [initialTitle, initialContent, pageId]);
 
-  const saveToFirestore = useCallback(
+  const saveToDatabase = useCallback(
     async (newTitle: string, newContent: string) => {
       // Don't save if nothing changed
       if (
@@ -55,35 +57,27 @@ export default function NoteEditor({
         return;
       }
 
+      if (!user) return;
+
       onSaveStatusChange?.("Saving...");
       try {
         const wc = newContent.trim()
           ? newContent.trim().split(/\s+/).length
           : 0;
-        await updateDoc(
-          doc(
-            db,
-            "notebooks",
-            notebookId,
-            "sections",
-            sectionId,
-            "pages",
-            pageId
-          ),
-          {
-            title: newTitle,
-            content: newContent,
-            wordCount: wc,
-            updatedAt: serverTimestamp(),
-          }
-        );
+        const pagePath = `users/${user.uid}/notebooks/${notebookId}/sections/${sectionId}/pages/${pageId}`;
+        await update(ref(database, pagePath), {
+          title: newTitle,
+          content: newContent,
+          wordCount: wc,
+          updatedAt: new Date().toISOString(),
+        });
         lastSavedRef.current = { title: newTitle, content: newContent };
         onSaveStatusChange?.("Saved");
       } catch {
         onSaveStatusChange?.("Error saving");
       }
     },
-    [pageId, notebookId, sectionId, onSaveStatusChange]
+    [pageId, notebookId, sectionId, onSaveStatusChange, user]
   );
 
   const debounceSave = useCallback(
@@ -91,10 +85,10 @@ export default function NoteEditor({
       onSaveStatusChange?.("Unsaved changes...");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
-        saveToFirestore(newTitle, newContent);
+        saveToDatabase(newTitle, newContent);
       }, 1000);
     },
-    [saveToFirestore, onSaveStatusChange]
+    [saveToDatabase, onSaveStatusChange]
   );
 
   // Cleanup timer on unmount

@@ -18,14 +18,8 @@ import {
   Plus,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-} from "firebase/firestore";
+import { database } from "@/lib/firebase";
+import { ref, get } from "firebase/database";
 
 const iconMap: Record<string, React.ElementType> = {
   atom: Atom,
@@ -58,23 +52,32 @@ export default function Sidebar({ activeNotebookId }: SidebarProps) {
     if (!user) return;
     const fetchNotebooks = async () => {
       try {
-        const q = query(
-          collection(db, "notebooks"),
-          where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc")
-        );
-        const snap = await getDocs(q);
-        setNotebooks(
-          snap.docs.map((d) => {
-            const data = d.data();
-            return {
-              id: d.id,
-              name: data.name,
-              icon: data.icon || "atom",
-              color: data.color || "#5b6ef5",
-            };
-          })
-        );
+        const notebooksRef = ref(database, `users/${user.uid}/notebooks`);
+        const snapshot = await get(notebooksRef);
+        const items: NotebookItem[] = [];
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          for (const [key, value] of Object.entries(data)) {
+            const nb = value as Record<string, unknown>;
+            items.push({
+              id: key,
+              name: (nb.name as string) || "",
+              icon: (nb.icon as string) || "atom",
+              color: (nb.color as string) || "#5b6ef5",
+            });
+          }
+          // Sort by updatedAt descending
+          items.sort((a, b) => {
+            const dataObj = data as Record<string, Record<string, unknown>>;
+            const aTime = dataObj[a.id]?.updatedAt as string | undefined;
+            const bTime = dataObj[b.id]?.updatedAt as string | undefined;
+            if (!aTime && !bTime) return 0;
+            if (!aTime) return 1;
+            if (!bTime) return -1;
+            return new Date(bTime).getTime() - new Date(aTime).getTime();
+          });
+        }
+        setNotebooks(items);
       } catch {
         // silently handle
       }

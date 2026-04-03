@@ -21,18 +21,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-  writeBatch,
-  doc,
-} from "firebase/firestore";
+import { database } from "@/lib/firebase";
+import { ref, get, push, set } from "firebase/database";
 
 const iconMap: Record<string, React.ElementType> = {
   atom: Atom,
@@ -120,26 +110,33 @@ export default function DashboardPage() {
     if (!user) return;
     setFetching(true);
     try {
-      const q = query(
-        collection(db, "notebooks"),
-        where("userId", "==", user.uid),
-        orderBy("updatedAt", "desc")
-      );
-      const snap = await getDocs(q);
-      const items: NotebookDoc[] = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          name: data.name,
-          description: data.description || "",
-          icon: data.icon || "atom",
-          color: data.color || "#5b6ef5",
-          bgColor: data.bgColor || "#eff6ff",
-          sections: data.sectionCount || 0,
-          pages: data.pageCount || 0,
-          updatedAt: data.updatedAt?.toDate?.() || null,
-        };
-      });
+      const notebooksRef = ref(database, `users/${user.uid}/notebooks`);
+      const snapshot = await get(notebooksRef);
+      const items: NotebookDoc[] = [];
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        for (const [key, value] of Object.entries(data)) {
+          const nb = value as Record<string, unknown>;
+          items.push({
+            id: key,
+            name: (nb.name as string) || "",
+            description: (nb.description as string) || "",
+            icon: (nb.icon as string) || "atom",
+            color: (nb.color as string) || "#5b6ef5",
+            bgColor: (nb.bgColor as string) || "#eff6ff",
+            sections: (nb.sectionCount as number) || 0,
+            pages: (nb.pageCount as number) || 0,
+            updatedAt: nb.updatedAt ? new Date(nb.updatedAt as string) : null,
+          });
+        }
+        // Sort by updatedAt descending
+        items.sort((a, b) => {
+          if (!a.updatedAt && !b.updatedAt) return 0;
+          if (!a.updatedAt) return 1;
+          if (!b.updatedAt) return -1;
+          return b.updatedAt.getTime() - a.updatedAt.getTime();
+        });
+      }
       setNotebooks(items);
     } catch {
       // silently handle
@@ -178,8 +175,9 @@ export default function DashboardPage() {
     setCreating(true);
     try {
       const opt = colorOptions[newColorIdx];
-      await addDoc(collection(db, "notebooks"), {
-        userId: user.uid,
+      const now = new Date().toISOString();
+      const newNotebookRef = push(ref(database, `users/${user.uid}/notebooks`));
+      await set(newNotebookRef, {
         name: newName.trim(),
         description: newDesc.trim(),
         icon: newIcon,
@@ -187,8 +185,8 @@ export default function DashboardPage() {
         bgColor: opt.bgColor,
         sectionCount: 0,
         pageCount: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
       });
       setShowModal(false);
       setNewName("");
@@ -203,11 +201,10 @@ export default function DashboardPage() {
   };
 
   const handleSeedDemos = async () => {
-    const batch = writeBatch(db);
+    const now = new Date().toISOString();
     for (const demo of demoNotebooks) {
-      const ref = doc(collection(db, "notebooks"));
-      batch.set(ref, {
-        userId: user.uid,
+      const newRef = push(ref(database, `users/${user.uid}/notebooks`));
+      await set(newRef, {
         name: demo.name,
         description: demo.description,
         icon: demo.icon,
@@ -215,11 +212,10 @@ export default function DashboardPage() {
         bgColor: demo.bgColor,
         sectionCount: 0,
         pageCount: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
       });
     }
-    await batch.commit();
     fetchNotebooks();
   };
 
