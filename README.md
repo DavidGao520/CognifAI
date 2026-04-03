@@ -115,13 +115,17 @@ UI designs created in Figma and implemented with pixel-level accuracy. The desig
 
 **Figma Prototype:** [View Design](https://www.figma.com/design/f2fL47KqSF2a5WqdOOFtYn/Cognif.ai--INFO-360-)
 
+**Design Proposal:** [View Document](https://drive.google.com/file/d/1m2ITEVeNna1-VyEybinayfysSda26VGt/view)
+
+**Pitch Video:** [Watch on YouTube](https://www.youtube.com/watch?v=p881J_vpSlM)
+
 ## Team
 
 | Member | Role |
 |--------|------|
-| **David Gao** | Full-stack development, deployment, design proposal |
-| **Songling Ngo** | Figma design, feature prototyping |
-| **Hafsah Usman** | User research, usability testing |
+| **David Gao** | Full-stack development, deployment |
+| **Songling Ngo** | Figma design, feature prototyping, pitch video |
+| **Hafsah Usman** | User research, usability testing, final design proposal |
 
 Built for INFO 360 Design Methods — University of Washington
 
