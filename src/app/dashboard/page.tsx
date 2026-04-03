@@ -519,19 +519,32 @@ export default function DashboardPage() {
       const now = new Date().toISOString();
       for (const nb of sampleNotebooks) {
         let totalPages = 0;
+        for (const s of nb.sections) totalPages += s.pages.length;
+
+        // Write notebook metadata FIRST
         const nbRef = push(ref(database, `users/${user.uid}/notebooks`));
         const nbId = nbRef.key!;
+        await set(nbRef, {
+          name: nb.name,
+          description: nb.description,
+          icon: nb.icon,
+          color: nb.color,
+          bgColor: nb.bgColor,
+          sectionCount: nb.sections.length,
+          pageCount: totalPages,
+          createdAt: now,
+          updatedAt: now,
+        });
 
+        // THEN write sections and pages (under the notebook node)
         for (const section of nb.sections) {
           const secRef = push(ref(database, `users/${user.uid}/notebooks/${nbId}/sections`));
           const secId = secRef.key!;
-          const pageCount = section.pages.length;
-          totalPages += pageCount;
 
           await set(secRef, {
             name: section.name,
             description: section.description,
-            pageCount,
+            pageCount: section.pages.length,
             order: nb.sections.indexOf(section),
             createdAt: now,
             updatedAt: now,
@@ -549,18 +562,6 @@ export default function DashboardPage() {
             });
           }
         }
-
-        await set(nbRef, {
-          name: nb.name,
-          description: nb.description,
-          icon: nb.icon,
-          color: nb.color,
-          bgColor: nb.bgColor,
-          sectionCount: nb.sections.length,
-          pageCount: totalPages,
-          createdAt: now,
-          updatedAt: now,
-        });
       }
       fetchNotebooks();
     } catch (err) {
