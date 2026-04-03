@@ -69,27 +69,335 @@ interface NotebookDoc {
   updatedAt: Date | null;
 }
 
-const demoNotebooks = [
+const sampleNotebooks = [
   {
     name: "Physics",
     description: "Classical mechanics, thermodynamics, waves, and modern physics",
     icon: "atom",
     color: "#5b6ef5",
     bgColor: "#eff6ff",
+    sections: [
+      {
+        name: "Mechanics",
+        description: "Newton's laws, kinematics, forces, energy, momentum, rotational motion",
+        pages: [
+          {
+            title: "Newton's Second Law",
+            content: `Overview
+
+Newton's Second Law of Motion states that the acceleration of an object is directly proportional to the net force acting upon it and inversely proportional to its mass. This is one of the most fundamental principles in classical mechanics.
+
+F = m × a
+
+Where F is net force (N), m is mass (kg), and a is acceleration (m/s²)
+
+Key Concepts
+
+Net Force: The vector sum of all forces acting on an object. If forces are balanced (net force = 0), the object maintains constant velocity (could be at rest).
+
+Mass: A measure of an object's inertia—its resistance to changes in motion. Greater mass means more force is required to achieve the same acceleration.
+
+Acceleration: The rate of change of velocity. Can be due to changing speed, changing direction, or both. Always points in the direction of the net force.
+
+Vector Nature: Force and acceleration are vectors—they have both magnitude and direction. Must use vector addition to find net force.
+
+Example Problem
+
+A 10 kg box is pushed across a frictionless surface with a force of 50 N. What is the acceleration of the box?
+
+Given: F = 50 N, m = 10 kg
+Find: a = ?
+Solution: F = ma → a = F/m = 50/10 = 5 m/s²
+
+Common Misconceptions
+
+• Heavier objects don't always fall faster — in a vacuum, all objects accelerate at g = 9.8 m/s²
+• Force is not needed to maintain motion — only to change motion (Newton's First Law)
+• Action-reaction pairs act on different objects, not the same one`,
+          },
+          {
+            title: "Free Body Diagrams",
+            content: `Free Body Diagrams (FBD)
+
+A free body diagram is a sketch of an object with all forces acting on it drawn as arrows. Essential tool for solving any mechanics problem.
+
+Steps to Draw an FBD:
+• Identify the object of interest
+• Draw the object as a simple shape (usually a dot or box)
+• Identify ALL forces acting ON the object
+• Draw each force as an arrow pointing in the correct direction
+• Label each force with its name and magnitude (if known)
+
+Common Forces:
+• Weight (W = mg) — always points downward
+• Normal force (N) — perpendicular to contact surface
+• Friction (f) — parallel to surface, opposes motion
+• Tension (T) — along the rope/string, away from object
+• Applied force (F) — in the direction of push/pull
+• Spring force (F = -kx) — toward equilibrium position`,
+          },
+          {
+            title: "Friction & Normal Force",
+            content: `Friction
+
+Friction is a force that opposes the relative motion or tendency of motion between two surfaces in contact.
+
+Types of Friction:
+• Static friction (fs ≤ μs × N) — prevents motion from starting
+• Kinetic friction (fk = μk × N) — opposes ongoing motion
+• μs > μk always (harder to start moving than to keep moving)
+
+Normal Force:
+The normal force is the support force exerted by a surface perpendicular to the object. On a flat surface: N = mg. On an incline at angle θ: N = mg cos(θ).
+
+Key Equations:
+• fs,max = μs × N (maximum static friction)
+• fk = μk × N (kinetic friction)
+• On an incline: component along slope = mg sin(θ)`,
+          },
+        ],
+      },
+      {
+        name: "Thermodynamics",
+        description: "Heat, work, entropy, and the laws of thermodynamics",
+        pages: [
+          {
+            title: "Entropy & Second Law",
+            content: `Rapid Lecture Notes — Entropy & Second Law
+
+• entropy = measure of disorder in system
+• ΔS = Q/T but only for reversible processes!!!
+• second law - entropy of isolated system always increases
+• can't have 100% efficient heat engine, always waste heat
+• Carnot cycle - theoretical max efficiency
+• efficiency = 1 - T_cold/T_hot
+• real engines way less efficient bc friction, heat loss etc
+• refrigerators are heat engines in reverse
+• COP = coefficient of performance for fridges
+• gibbs free energy G = H - TS determines spontaneity
+• if ΔG negative → spontaneous
+• phase transitions have entropy changes
+• ice melting = entropy increases (more disorder)
+• prof said remember: "nature tends toward disorder"
+• statistical interpretation: S = k ln(W) - Boltzmann
+• W = number of microstates
+• more microstates = higher entropy
+• example: gas expansion into vacuum - irreversible, entropy up`,
+          },
+          {
+            title: "Carnot Cycle",
+            content: `The Carnot Cycle
+
+The Carnot cycle is the most efficient thermodynamic cycle possible, consisting of four reversible processes.
+
+Four Steps:
+1. Isothermal expansion (absorb heat Qh from hot reservoir at Th)
+2. Adiabatic expansion (temperature drops from Th to Tc)
+3. Isothermal compression (release heat Qc to cold reservoir at Tc)
+4. Adiabatic compression (temperature rises from Tc to Th)
+
+Carnot Efficiency:
+η = 1 - Tc/Th (temperatures in Kelvin!)
+
+Key Points:
+• No real engine can be more efficient than a Carnot engine
+• Efficiency increases as Th increases or Tc decreases
+• Efficiency can never reach 100% (would require Tc = 0 K)
+• All reversible engines operating between same temperatures have same efficiency`,
+          },
+        ],
+      },
+      {
+        name: "Waves & Optics",
+        description: "Wave mechanics, interference, diffraction, reflection, refraction, lenses",
+        pages: [
+          {
+            title: "Wave Properties",
+            content: `Fundamental Wave Properties
+
+Wavelength (λ): Distance between two consecutive crests or troughs
+Frequency (f): Number of complete cycles per second (Hz)
+Period (T): Time for one complete cycle, T = 1/f
+Amplitude (A): Maximum displacement from equilibrium
+Wave speed: v = fλ
+
+Types of Waves:
+• Transverse: oscillation perpendicular to wave direction (light, water surface)
+• Longitudinal: oscillation parallel to wave direction (sound)
+
+Wave Equation:
+y(x,t) = A sin(kx - ωt + φ)
+where k = 2π/λ (wave number) and ω = 2πf (angular frequency)
+
+Superposition Principle:
+When two waves meet, the resultant displacement is the sum of individual displacements.
+• Constructive interference: waves in phase → amplitude adds
+• Destructive interference: waves out of phase → amplitude cancels`,
+          },
+        ],
+      },
+      {
+        name: "Modern Physics",
+        description: "Quantum mechanics, special relativity, atomic structure, nuclear physics",
+        pages: [
+          {
+            title: "Wave-Particle Duality",
+            content: `Wave-Particle Duality
+
+Fundamental Concepts:
+• Photons exhibit wave-particle duality
+• de Broglie wavelength: λ = h/p
+• Wave function collapse happens during measurement
+• Uncertainty principle limits precision
+
+Double-Slit Experiment:
+The double-slit experiment demonstrates the fundamental weirdness of quantum mechanics. When electrons pass through two slits, they create an interference pattern like waves, but when we try to measure which slit they go through, the pattern disappears.
+
+• Electrons show interference pattern without observation
+• Pattern disappears when measuring which slit
+• Demonstrates wave-particle duality
+
+Mathematical Framework:
+• Schrödinger equation: describes wave function evolution
+• Born interpretation: |ψ|² gives probability density
+• Operators correspond to physical observables`,
+          },
+        ],
+      },
+    ],
   },
   {
-    name: "Mathematics",
-    description: "Calculus, linear algebra, and differential equations",
+    name: "Chemistry 201",
+    description: "Organic chemistry, reactions, molecular structure, thermochemistry",
+    icon: "lightbulb",
+    color: "#f59e0b",
+    bgColor: "#fefce8",
+    sections: [
+      {
+        name: "Organic Chemistry",
+        description: "Functional groups, reactions, stereochemistry, synthesis",
+        pages: [
+          {
+            title: "SN1 vs SN2 Reactions",
+            content: `SN2 Reactions
+
+Mechanism: Bimolecular nucleophilic substitution — occurs in a single concerted step
+
+• Nucleophile attacks from backside (opposite the leaving group)
+• Causes inversion of configuration (Walden inversion)
+• Rate = k[substrate][nucleophile] — second order kinetics
+• Favored by strong nucleophiles and primary substrates
+• Polar aprotic solvents (DMSO, acetone) enhance rate
+
+SN1 Reactions
+
+Mechanism: Unimolecular nucleophilic substitution — proceeds in two steps
+
+• Step 1: Leaving group departs, forming carbocation (slow, rate-determining)
+• Step 2: Nucleophile attacks carbocation (fast)
+• Rate = k[substrate] — first order kinetics
+• Results in racemization (loss of stereochemistry)
+• Favored by tertiary substrates (stable carbocations)
+• Polar protic solvents (water, alcohols) stabilize carbocation
+
+Key Differences Summary:
+• Stereochemistry: SN2 = inversion, SN1 = racemization
+• Kinetics: SN2 = 2nd order, SN1 = 1st order
+• Substrate: SN2 prefers 1°, SN1 prefers 3°
+• Solvent: SN2 = polar aprotic, SN1 = polar protic`,
+          },
+        ],
+      },
+      {
+        name: "Thermochemistry",
+        description: "Enthalpy, entropy, Gibbs free energy, reaction spontaneity",
+        pages: [
+          {
+            title: "Hess's Law",
+            content: `Hess's Law
+
+The total enthalpy change for a reaction is independent of the pathway taken. This means we can add up enthalpy changes of individual steps to find the overall ΔH.
+
+Key Principle:
+ΔH is a state function — depends only on initial and final states, not the path.
+
+Using Hess's Law:
+1. Write target reaction
+2. Manipulate given reactions (reverse, multiply) to match
+3. If you reverse a reaction, change the sign of ΔH
+4. If you multiply a reaction by n, multiply ΔH by n
+5. Add up all ΔH values
+
+Standard Enthalpy of Formation (ΔHf°):
+• Enthalpy change when 1 mol of compound forms from elements in standard states
+• ΔH°rxn = Σ ΔHf°(products) - Σ ΔHf°(reactants)
+• ΔHf° for elements in standard state = 0`,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: "Calculus III",
+    description: "Multivariable calculus, vector calculus, partial derivatives, multiple integrals",
     icon: "calculator",
     color: "#3db9a4",
     bgColor: "#ecfdf5",
-  },
-  {
-    name: "Computer Science",
-    description: "Data structures, algorithms, and system design",
-    icon: "monitor",
-    color: "#06b6d4",
-    bgColor: "#ecfeff",
+    sections: [
+      {
+        name: "Vector Calculus",
+        description: "Gradient, divergence, curl, line integrals, surface integrals",
+        pages: [
+          {
+            title: "Divergence Theorem",
+            content: `Divergence Theorem (Gauss's Theorem)
+
+Relates the flux of a vector field through a closed surface to the divergence of the field in the volume enclosed.
+
+∫∫∫_V (∇ · F) dV = ∫∫_S F · n dS
+
+Requirements:
+• S must be a closed surface (piecewise smooth)
+• F must be continuously differentiable on V
+• n is the outward-pointing unit normal vector
+
+Physical Interpretation:
+The total flux through a closed surface equals the sum of all sources (positive divergence) minus all sinks (negative divergence) inside the volume.
+
+Example: For a sphere of radius r centered at origin with F = (x, y, z), the divergence theorem gives:
+
+∫∫∫_sphere 3 dV = 4πr³
+
+Applications:
+• Fluid dynamics — relates flow out of a region to sources inside
+• Electrostatics — derives Gauss's law for electric fields
+• Heat transfer — relates heat flux to temperature distribution`,
+          },
+          {
+            title: "Stokes' Theorem",
+            content: `Stokes' Theorem
+
+Relates the surface integral of curl(F) to the line integral of F around the boundary curve.
+
+∫∫_S (∇ × F) · dS = ∮_C F · dr
+
+Key Requirements:
+• S is an oriented surface bounded by curve C
+• C is traversed in positive direction (right-hand rule)
+• F must have continuous partial derivatives
+
+Special Cases:
+• If S is a flat region in the xy-plane, reduces to Green's Theorem
+• If curl(F) = 0 everywhere, the line integral around any closed curve is zero
+
+Applications:
+• Verifying conservative vector fields
+• Computing circulation of fluid flow
+• Electromagnetic theory (Faraday's law)`,
+          },
+        ],
+      },
+    ],
   },
 ];
 
@@ -200,23 +508,62 @@ export default function DashboardPage() {
     setCreating(false);
   };
 
-  const handleSeedDemos = async () => {
-    const now = new Date().toISOString();
-    for (const demo of demoNotebooks) {
-      const newRef = push(ref(database, `users/${user.uid}/notebooks`));
-      await set(newRef, {
-        name: demo.name,
-        description: demo.description,
-        icon: demo.icon,
-        color: demo.color,
-        bgColor: demo.bgColor,
-        sectionCount: 0,
-        pageCount: 0,
-        createdAt: now,
-        updatedAt: now,
-      });
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeedSamples = async () => {
+    setSeeding(true);
+    try {
+      const now = new Date().toISOString();
+      for (const nb of sampleNotebooks) {
+        let totalPages = 0;
+        const nbRef = push(ref(database, `users/${user.uid}/notebooks`));
+        const nbId = nbRef.key!;
+
+        for (const section of nb.sections) {
+          const secRef = push(ref(database, `users/${user.uid}/notebooks/${nbId}/sections`));
+          const secId = secRef.key!;
+          const pageCount = section.pages.length;
+          totalPages += pageCount;
+
+          await set(secRef, {
+            name: section.name,
+            description: section.description,
+            pageCount,
+            order: nb.sections.indexOf(section),
+            createdAt: now,
+            updatedAt: now,
+          });
+
+          for (const page of section.pages) {
+            const pageRef = push(ref(database, `users/${user.uid}/notebooks/${nbId}/sections/${secId}/pages`));
+            await set(pageRef, {
+              title: page.title,
+              content: page.content,
+              wordCount: page.content.split(/\s+/).filter(Boolean).length,
+              order: section.pages.indexOf(page),
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
+        }
+
+        await set(nbRef, {
+          name: nb.name,
+          description: nb.description,
+          icon: nb.icon,
+          color: nb.color,
+          bgColor: nb.bgColor,
+          sectionCount: nb.sections.length,
+          pageCount: totalPages,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      fetchNotebooks();
+    } catch (err) {
+      console.error("Error seeding samples:", err);
     }
-    fetchNotebooks();
+    setSeeding(false);
   };
 
   const timeAgo = (date: Date | null) => {
@@ -319,10 +666,21 @@ export default function DashboardPage() {
             </p>
             {!searchQuery && (
               <button
-                onClick={handleSeedDemos}
-                className="px-4 py-2 bg-[#5b6ef5] text-white rounded-[10px] text-sm font-semibold hover:bg-[#4a5cd4] transition-colors"
+                onClick={handleSeedSamples}
+                disabled={seeding}
+                className="px-5 py-2.5 bg-[#5b6ef5] text-white rounded-[10px] text-sm font-semibold hover:bg-[#4a5cd4] transition-colors flex items-center gap-2 mx-auto disabled:opacity-60"
               >
-                Populate with Demo Notebooks
+                {seeding ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading Sample Notebooks...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Load Sample Notebooks
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -361,6 +719,29 @@ export default function DashboardPage() {
               })}
             </div>
           </>
+        )}
+
+        {/* Sample Notebooks Button (when notebooks exist) */}
+        {!fetching && filtered.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={handleSeedSamples}
+              disabled={seeding}
+              className="px-4 py-2 border border-[#e5e7eb] rounded-[10px] text-sm text-[#6a7282] hover:bg-white hover:border-[#5b6ef5] hover:text-[#5b6ef5] transition-colors flex items-center gap-2 disabled:opacity-60"
+            >
+              {seeding ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Load Sample Notebooks
+                </>
+              )}
+            </button>
+          </div>
         )}
 
         {/* AI Insight Banner */}
